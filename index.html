@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TestAuth 2FA</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap');
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#0a0a0f;--surface:#111118;--border:#222230;--text:#e8e8f0;--muted:#5a5a7a;
+    --accent:#4f46e5;--accent-g:rgba(79,70,229,0.25);
+    --ok:#22c55e;--ok-g:rgba(34,197,94,0.2);
+    --err:#ef4444;--err-g:rgba(239,68,68,0.2);
+  }
+  body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
+  body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 60% 50% at 20% 50%,rgba(79,70,229,.08) 0%,transparent 70%),radial-gradient(ellipse 40% 40% at 80% 20%,rgba(79,70,229,.05) 0%,transparent 70%);pointer-events:none}
+  body::after{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(79,70,229,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(79,70,229,.04) 1px,transparent 1px);background-size:40px 40px;pointer-events:none}
+  .wrap{width:420px;position:relative;z-index:1}
+  .logo{text-align:center;margin-bottom:28px}
+  .logo-mark{width:48px;height:48px;background:var(--accent);border-radius:12px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:10px;box-shadow:0 0 30px var(--accent-g)}
+  .logo-mark svg{width:24px;height:24px;color:#fff}
+  .logo-name{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.15em;color:var(--muted);text-transform:uppercase}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:36px;position:relative;overflow:hidden}
+  .card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(79,70,229,.5),transparent)}
+  .steps{display:flex;align-items:center;margin-bottom:30px}
+  .step{display:flex;align-items:center;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.05em;color:var(--muted);transition:color .3s;flex:1}
+  .step.active{color:var(--text)}.step.done{color:var(--ok)}
+  .step-num{width:24px;height:24px;border-radius:50%;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;transition:all .3s;flex-shrink:0}
+  .step.active .step-num{border-color:var(--accent);background:var(--accent-g);color:var(--accent);box-shadow:0 0 10px var(--accent-g)}
+  .step.done .step-num{border-color:var(--ok);background:var(--ok-g);color:var(--ok)}
+  .step-line{flex:1;height:1px;background:var(--border);margin:0 8px}
+  .ftitle{font-size:20px;font-weight:600;margin-bottom:6px;letter-spacing:-.02em}
+  .fsub{font-size:13px;color:var(--muted);margin-bottom:24px;line-height:1.5}
+  .fg{margin-bottom:14px}
+  label{display:block;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+  input[type=text],input[type=password]{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:14px;outline:none;transition:border-color .2s,box-shadow .2s}
+  input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-g)}
+  input.ei{border-color:var(--err);box-shadow:0 0 0 3px var(--err-g)}
+  .divider{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:11px;font-family:'IBM Plex Mono',monospace;letter-spacing:.05em;margin:18px 0 14px}
+  .divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border)}
+  .hint{background:rgba(79,70,229,.06);border:1px solid rgba(79,70,229,.2);border-radius:8px;padding:11px 13px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:18px;line-height:1.7}
+  .hint strong{color:var(--accent)}
+  .msg{padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:14px;display:none;align-items:center;gap:8px;line-height:1.4}
+  .msg.show{display:flex}
+  .msg-err{background:var(--err-g);border:1px solid rgba(239,68,68,.3);color:#fca5a5}
+  .timer-row{display:flex;align-items:center;justify-content:center;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);margin-bottom:10px}
+  .ring{position:relative;width:28px;height:28px}
+  .ring svg{transform:rotate(-90deg)}
+  .ring circle{fill:none;stroke:var(--border);stroke-width:2}
+  .ring .arc{stroke:var(--accent);stroke-linecap:round;transition:stroke-dashoffset 1s linear,stroke .3s}
+  .ring-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:600}
+  .otp-row{display:flex;gap:8px;justify-content:center;margin:20px 0}
+  .od{width:52px;height:64px;background:var(--bg);border:1px solid var(--border);border-radius:10px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:24px;font-weight:600;color:var(--text);outline:none;transition:all .2s;caret-color:var(--accent)}
+  .od:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-g)}
+  .od.filled{border-color:rgba(79,70,229,.5);background:rgba(79,70,229,.05)}
+  .od.ei{border-color:var(--err);box-shadow:0 0 0 3px var(--err-g);animation:shake .4s ease}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+  .btn{width:100%;padding:13px;border-radius:8px;border:none;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;letter-spacing:.05em;cursor:pointer;transition:all .2s}
+  .bp{background:var(--accent);color:#fff;box-shadow:0 0 20px var(--accent-g)}
+  .bp:hover:not(:disabled){background:#5b52f0;box-shadow:0 0 30px rgba(79,70,229,.4);transform:translateY(-1px)}
+  .bp:disabled{opacity:.5;cursor:not-allowed}
+  .bg{background:transparent;color:var(--muted);border:1px solid var(--border);margin-top:10px;font-size:12px}
+  .bg:hover{color:var(--text);border-color:#333345}
+  .sc{text-align:center;padding:16px 0;display:none}
+  .si{width:64px;height:64px;background:var(--ok-g);border:2px solid var(--ok);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;margin-bottom:18px;animation:pop .5s cubic-bezier(.175,.885,.32,1.275);box-shadow:0 0 30px var(--ok-g)}
+  @keyframes pop{from{transform:scale(.5);opacity:0}to{transform:scale(1);opacity:1}}
+  .st{font-size:22px;font-weight:600;margin-bottom:6px;color:var(--ok)}
+  .ss{font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.6}
+  .badge{display:inline-flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 16px;font-family:'IBM Plex Mono',monospace;font-size:13px;margin-bottom:18px}
+  .dot{width:8px;height:8px;background:var(--ok);border-radius:50%;box-shadow:0 0 6px var(--ok);animation:blink 2s infinite}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+  .screen{animation:fi .3s ease}
+  @keyframes fi{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">
+    <div class="logo-mark">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="11" width="18" height="11" rx="2"/>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+      </svg>
+    </div>
+    <div class="logo-name">TestAuth · 2FA Demo</div>
+  </div>
+  <div class="card">
+    <div class="steps" id="steps">
+      <div class="step active" id="s1"><div class="step-num">1</div>Credenciales</div>
+      <div class="step-line"></div>
+      <div class="step" id="s2"><div class="step-num">2</div>Verificación</div>
+    </div>
+
+    <!-- Login -->
+    <div id="scr-login" class="screen">
+      <div class="ftitle">Iniciar sesión</div>
+      <div class="fsub">Ingresa tus credenciales para continuar.</div>
+      <div class="msg msg-err" id="lerr"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Usuario o contraseña incorrectos.</div>
+      <div class="fg"><label>Usuario</label><input type="text" id="uname" placeholder="testuser_01" autocomplete="off"/></div>
+      <div class="fg"><label>Contraseña</label><input type="password" id="pwd" placeholder="••••••••"/></div>
+
+      <button class="btn bp" onclick="doLogin()">Continuar →</button>
+    </div>
+
+    <!-- TOTP -->
+    <div id="scr-totp" class="screen" style="display:none">
+      <div class="ftitle">Verificación 2FA</div>
+      <div class="fsub">Usa el secret de tu usuario en tu app autenticadora y escribe el código de 6 dígitos.</div>
+      <div class="msg msg-err" id="terr"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Código incorrecto o expirado.</div>
+      <div class="timer-row">
+        <div class="ring">
+          <svg width="28" height="28" viewBox="0 0 28 28">
+            <circle cx="14" cy="14" r="12" stroke-dasharray="75.4" stroke-dashoffset="0"/>
+            <circle class="arc" id="arc" cx="14" cy="14" r="12" stroke-dasharray="75.4" stroke-dashoffset="0"/>
+          </svg>
+          <div class="ring-num" id="tcnt">30</div>
+        </div>
+        <span id="tlbl">segundos restantes</span>
+      </div>
+
+      <div class="otp-row" id="otp-row">
+        <input class="od" maxlength="1" type="text" inputmode="numeric" id="d0"/>
+        <input class="od" maxlength="1" type="text" inputmode="numeric" id="d1"/>
+        <input class="od" maxlength="1" type="text" inputmode="numeric" id="d2"/>
+        <input class="od" maxlength="1" type="text" inputmode="numeric" id="d3"/>
+        <input class="od" maxlength="1" type="text" inputmode="numeric" id="d4"/>
+        <input class="od" maxlength="1" type="text" inputmode="numeric" id="d5"/>
+      </div>
+      <button class="btn bp" id="vbtn" onclick="doVerify()" disabled>Verificar →</button>
+      <button class="btn bg" onclick="goBack()">← Volver</button>
+    </div>
+
+    <!-- Success -->
+    <div id="scr-ok" class="sc">
+      <div class="si"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <div class="st">Acceso concedido</div>
+      <div class="ss">Autenticación de dos factores completada correctamente.</div>
+      <div class="badge"><div class="dot"></div><span id="su">—</span></div><br>
+      <button class="btn bg" onclick="doLogout()">Cerrar sesión</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const USERS={
+  'testuser_01':{password:'Test@1234!',secret:'JBSWY3DPEHPK3PXP',role:'Usuario'},
+  'testuser_02':{password:'Secure#5678!',secret:'KRUGKIDROVUWG2ZA',role:'Usuario'},
+  'admin_test':{password:'Admin@Pass99!',secret:'N5UGC3THNFQWMZLB',role:'Admin'},
+};
+let cur=null,tmr=null;
+
+function b32(s){
+  const C='ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  s=s.toUpperCase().replace(/=+$/,'');
+  let bits=0,val=0,out=[];
+  for(let c of s){val=(val<<5)|C.indexOf(c);bits+=5;if(bits>=8){bits-=8;out.push((val>>bits)&0xff);}}
+  return new Uint8Array(out);
+}
+async function hmac(key,data){
+  const k=await crypto.subtle.importKey('raw',key,{name:'HMAC',hash:'SHA-1'},false,['sign']);
+  return new Uint8Array(await crypto.subtle.sign('HMAC',k,data));
+}
+async function genTOTP(secret,w=0){
+  const T=Math.floor(Date.now()/1000/30)+w;
+  const buf=new ArrayBuffer(8);
+  new DataView(buf).setUint32(4,T,false);
+  const mac=await hmac(b32(secret),buf);
+  const o=mac[19]&0xf;
+  const code=(((mac[o]&0x7f)<<24)|(mac[o+1]<<16)|(mac[o+2]<<8)|mac[o+3])%1000000;
+  return String(code).padStart(6,'0');
+}
+async function verifyTOTP(secret,code){
+  for(let w of[-1,0,1])if(await genTOTP(secret,w)===code)return true;
+  return false;
+}
+
+function show(id){
+  ['scr-login','scr-totp','scr-ok'].forEach(s=>{
+    const el=document.getElementById(s);
+    el.style.display='none';el.classList.remove('screen');
+  });
+  const el=document.getElementById(id);
+  el.style.display='block';el.classList.add('screen');
+}
+function setStep(n){
+  document.getElementById('s1').className='step '+(n===1?'active':'done');
+  document.getElementById('s2').className='step '+(n===2?'active':'');
+}
+
+function startTimer(){
+  const arc=document.getElementById('arc'),cnt=document.getElementById('tcnt'),lbl=document.getElementById('tlbl');
+  const C=2*Math.PI*12;
+  function tick(){
+    const sec=30-(Math.floor(Date.now()/1000)%30);
+    arc.style.strokeDashoffset=C*(1-sec/30);
+    cnt.textContent=sec;
+    lbl.textContent=sec===1?'segundo restante':'segundos restantes';
+    arc.style.stroke=sec<=5?'#ef4444':sec<=10?'#f59e0b':'#4f46e5';
+  }
+  tick();tmr=setInterval(tick,500);
+}
+function stopTimer(){clearInterval(tmr);}
+
+function setupOTP(){
+  const ds=[...document.querySelectorAll('.od')];
+  ds.forEach((d,i)=>{
+    d.value='';d.classList.remove('filled','ei');
+    d.oninput=e=>{
+      const v=e.target.value.replace(/\D/g,'');
+      e.target.value=v.slice(-1);
+      e.target.classList.toggle('filled',!!e.target.value);
+      if(v&&i<5)ds[i+1].focus();
+      checkDone();
+    };
+    d.onkeydown=e=>{
+      if(e.key==='Backspace'&&!d.value&&i>0){ds[i-1].focus();ds[i-1].value='';ds[i-1].classList.remove('filled');}
+    };
+    d.onpaste=e=>{
+      const p=(e.clipboardData||window.clipboardData).getData('text').replace(/\D/g,'').slice(0,6);
+      e.preventDefault();
+      p.split('').forEach((c,j)=>{if(ds[j]){ds[j].value=c;ds[j].classList.add('filled');}});
+      checkDone();if(p.length===6)ds[5].focus();
+    };
+  });
+}
+function getCode(){return[...document.querySelectorAll('.od')].map(d=>d.value).join('');}
+function checkDone(){document.getElementById('vbtn').disabled=getCode().length<6;}
+
+function doLogin(){
+  const u=document.getElementById('uname').value.trim();
+  const p=document.getElementById('pwd').value;
+  if(!USERS[u]||USERS[u].password!==p){
+    document.getElementById('lerr').classList.add('show');
+    document.getElementById('uname').classList.add('ei');
+    document.getElementById('pwd').classList.add('ei');
+    setTimeout(()=>{
+      document.getElementById('lerr').classList.remove('show');
+      document.getElementById('uname').classList.remove('ei');
+      document.getElementById('pwd').classList.remove('ei');
+    },3000);return;
+  }
+  cur=u;
+  document.getElementById('sec-disp').textContent=USERS[u].secret;
+  setStep(2);show('scr-totp');setupOTP();startTimer();
+  setTimeout(()=>document.getElementById('d0').focus(),100);
+}
+
+async function doVerify(){
+  const code=getCode();
+  const ds=[...document.querySelectorAll('.od')];
+  const ok=await verifyTOTP(USERS[cur].secret,code);
+  if(!ok){
+    ds.forEach(d=>d.classList.add('ei'));
+    document.getElementById('terr').classList.add('show');
+    setTimeout(()=>{
+      ds.forEach(d=>{d.classList.remove('ei');d.value='';d.classList.remove('filled');});
+      document.getElementById('terr').classList.remove('show');
+      document.getElementById('d0').focus();checkDone();
+    },1800);return;
+  }
+  stopTimer();
+  document.getElementById('steps').style.display='none';
+  document.getElementById('su').textContent=cur+' · '+USERS[cur].role;
+  show('scr-ok');
+}
+
+function goBack(){
+  stopTimer();cur=null;setStep(1);
+  document.getElementById('steps').style.display='flex';
+  document.getElementById('lerr').classList.remove('show');
+  show('scr-login');
+}
+function doLogout(){
+  document.getElementById('uname').value='';
+  document.getElementById('pwd').value='';
+  cur=null;setStep(1);
+  document.getElementById('steps').style.display='flex';
+  show('scr-login');
+}
+
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Enter')return;
+  if(document.getElementById('scr-login').classList.contains('screen'))doLogin();
+  else if(document.getElementById('scr-totp').classList.contains('screen')&&getCode().length===6)doVerify();
+});
+</script>
+</body>
+</html>
