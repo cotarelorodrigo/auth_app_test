@@ -29,3 +29,27 @@ open index.html
 - Vanilla HTML/CSS/JS
 - TOTP: RFC 6238 via `crypto.subtle` (no libraries)
 - Zero dependencies
+
+## Google Sign-In test case
+
+`/google-login` is a second login case: a single "Sign in with Google"
+button that opens a new tab running a real Google OAuth 2.0
+authorization-code flow (not a mock).
+
+To make it actually work, create an OAuth client in
+[Google Cloud Console](https://console.cloud.google.com/apis/credentials)
+and authorize this redirect URI:
+
+```
+<your-origin>/api/auth/google/callback
+```
+
+Then set these in `.env.local` (already gitignored):
+
+```
+GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-client-secret
+```
+
+Without these, `/google-login` still renders but the flow fails with a
+clear "not configured" error instead of silently breaking.
