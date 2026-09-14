@@ -53,3 +53,22 @@ GOOGLE_CLIENT_SECRET=your-client-secret
 
 Without these, `/google-login` still renders but the flow fails with a
 clear "not configured" error instead of silently breaking.
+
+## Google FedCM test case
+
+`/google-fedcm` is a third login case, distinct from `/google-login`:
+instead of a top-level redirect in a new tab, it uses Google Identity
+Services (GIS) with `use_fedcm_for_prompt: true`, so the browser itself
+mediates the login via its native FedCM identity dialog — no redirect,
+no new tab. The resulting ID token is verified server-side against
+Google's `tokeninfo` endpoint in `app/api/auth/google/fedcm-verify`.
+
+It reuses `GOOGLE_CLIENT_ID` from `.env.local`, but GIS additionally
+requires the page's origin to be allow-listed. In the same OAuth client
+in Google Cloud Console, add under **Authorized JavaScript origins**:
+
+```
+http://localhost:3000
+```
+
+(and any other origin you serve this app from).
