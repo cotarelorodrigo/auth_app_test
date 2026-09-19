@@ -6,6 +6,7 @@ import { useRef, useState } from 'react'
 declare global {
   interface Window {
     grecaptcha?: {
+      ready: (callback: () => void) => void
       render: (
         container: HTMLElement,
         params: {
@@ -45,12 +46,19 @@ export default function RecaptchaLoginClient({ siteKey }: { siteKey: string | nu
   const widgetIdRef = useRef<number | undefined>(undefined)
 
   const setupRecaptcha = () => {
-    if (!siteKey || !window.grecaptcha || !widgetRef.current) return
-    widgetIdRef.current = window.grecaptcha.render(widgetRef.current, {
-      sitekey: siteKey,
-      callback: t => setToken(t),
-      'expired-callback': () => setToken(null),
-      'error-callback': () => setToken(null),
+    if (!siteKey || !window.grecaptcha) return
+    // El evento `load` del <script> solo confirma que el archivo se
+    // descargó: `grecaptcha` existe como stub en ese momento, pero
+    // `.render` se adjunta en una segunda etapa async. `ready()` encola
+    // el callback hasta que la API esté realmente completa.
+    window.grecaptcha.ready(() => {
+      if (!window.grecaptcha || !widgetRef.current) return
+      widgetIdRef.current = window.grecaptcha.render(widgetRef.current, {
+        sitekey: siteKey,
+        callback: t => setToken(t),
+        'expired-callback': () => setToken(null),
+        'error-callback': () => setToken(null),
+      })
     })
   }
 
