@@ -72,3 +72,30 @@ http://localhost:3000
 ```
 
 (and any other origin you serve this app from).
+
+## Google reCAPTCHA v2 test case
+
+`/recaptcha-login` is a fourth login case: a local username/password form
+(same test users as the 2FA case) gated by Google's real reCAPTCHA v2
+checkbox widget ("I'm not a robot"). Submit stays disabled until the
+widget resolves and hands back a token; the server then verifies that
+token against Google's `siteverify` endpoint (`app/api/auth/recaptcha/verify`)
+before checking the credentials.
+
+`.env.local` ships pre-filled with
+[Google's official test key pair](https://developers.google.com/recaptcha/docs/faq)
+for reCAPTCHA v2 — it always shows the checkbox and always passes
+verification, but only on `localhost`:
+
+```
+RECAPTCHA_SITE_KEY=6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI
+RECAPTCHA_SECRET_KEY=6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe
+```
+
+To test against a real site key instead, register a **v2 Checkbox**
+site in the [reCAPTCHA admin console](https://www.google.com/recaptcha/admin)
+for the domain you're serving from, and swap in that site key/secret.
+
+Without `RECAPTCHA_SITE_KEY` / `RECAPTCHA_SECRET_KEY` configured,
+`/recaptcha-login` still renders but shows a clear "not configured"
+error instead of silently breaking.
