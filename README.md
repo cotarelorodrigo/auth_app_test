@@ -99,3 +99,34 @@ for the domain you're serving from, and swap in that site key/secret.
 Without `RECAPTCHA_SITE_KEY` / `RECAPTCHA_SECRET_KEY` configured,
 `/recaptcha-login` still renders but shows a clear "not configured"
 error instead of silently breaking.
+
+## Google reCAPTCHA v3 test case
+
+`/recaptcha-v3-login` is a fifth login case, distinct from
+`/recaptcha-login`: instead of a visible checkbox widget, it uses
+reCAPTCHA v3 (invisible, score-based). The page calls
+`grecaptcha.execute(siteKey, { action: "login" })` on submit with no
+widget to solve, and the server (`app/api/auth/recaptcha-v3/verify`)
+checks the token, the action, and the risk score — at least
+`RECAPTCHA_MIN_SCORE` (default `0.5`) — before checking the
+credentials. It fails closed on Google's over-quota `siteverify`
+response (HTTP 200 `success:true` with a static score plus an error).
+
+v3 site/secret keys are a separate key type from the v2 checkbox keys
+used by `/recaptcha-login`, so this case has its own env vars. Add
+these to `.env.local`:
+
+```
+RECAPTCHA_V3_SITE_KEY=your-v3-site-key
+RECAPTCHA_V3_SECRET_KEY=your-v3-secret-key
+RECAPTCHA_MIN_SCORE=0.5
+```
+
+Unlike v2, Google does not publish an official v3 test key pair, so
+register a **v3 (score based)** site in the
+[reCAPTCHA admin console](https://www.google.com/recaptcha/admin) for
+the domain you're serving from.
+
+Without `RECAPTCHA_V3_SITE_KEY` / `RECAPTCHA_V3_SECRET_KEY` configured,
+`/recaptcha-v3-login` still renders but shows a clear "not configured"
+error instead of silently breaking.
