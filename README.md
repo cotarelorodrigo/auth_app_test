@@ -130,3 +130,25 @@ the domain you're serving from.
 Without `RECAPTCHA_V3_SITE_KEY` / `RECAPTCHA_V3_SECRET_KEY` configured,
 `/recaptcha-v3-login` still renders but shows a clear "not configured"
 error instead of silently breaking.
+
+## HTTP Basic (curl) test case
+
+`/api/auth/basic` is a sixth login case with no UI: it authenticates a
+request from its `Authorization: Basic <base64(user:password)>` header,
+so it is meant to be exercised with `curl`. Accepts `GET` and `POST`.
+
+Set the accepted credentials in `.env.local`:
+
+```
+BASIC_AUTH_USER=your-client-id
+BASIC_AUTH_PASSWORD=your-client-secret
+```
+
+```bash
+curl -i http://localhost:3000/api/auth/basic \
+  -H "Authorization: Basic $(printf '%s:%s' "$BASIC_AUTH_USER" "$BASIC_AUTH_PASSWORD" | base64 | tr -d '\n')"
+```
+
+Returns `200 {"ok":true,"user":...}` on a match. A missing, malformed or
+wrong header returns `401` with `WWW-Authenticate: Basic`; without the
+env vars configured it returns `500 not_configured`.
