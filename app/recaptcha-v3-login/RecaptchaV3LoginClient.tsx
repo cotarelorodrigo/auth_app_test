@@ -137,11 +137,11 @@ export default function RecaptchaV3LoginClient({ siteKey }: { siteKey: string | 
                 {status === 'error' && <div className="msg msg-err show">{errorMessage(errorReason)}</div>}
                 <div className="fg">
                   <label>Usuario</label>
-                  <input type="text" value={username} onChange={e => setUsername(e.target.value)} placeholder="testuser_01" autoComplete="off" />
+                  <input type="text" value={username} onChange={e => setUsername(e.target.value)} placeholder="username" autoComplete="off" />
                 </div>
                 <div className="fg">
                   <label>Contraseña</label>
-                  <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" />
+                  <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="password" />
                 </div>
                 <button className="btn bp" onClick={doLogin} disabled={!canSubmit}>
                   {status === 'verifying' ? 'Verificando…' : 'Continuar →'}
