@@ -131,6 +131,28 @@ Without `RECAPTCHA_V3_SITE_KEY` / `RECAPTCHA_V3_SECRET_KEY` configured,
 `/recaptcha-v3-login` still renders but shows a clear "not configured"
 error instead of silently breaking.
 
+## Image CAPTCHA test case
+
+`/image-captcha-login` is a custom-CAPTCHA login case: username/password
+(same test users as the other cases) plus a classic distorted-text image
+CAPTCHA. The server makes a 6-character CAPTCHA with `svg-captcha`, renders
+it as a 300x100 PNG with `@resvg/resvg-js` (`GET /api/auth/image-captcha`),
+and keeps the answer in memory: it is never in the page, the cookie, or any
+response. The agent has to read the image. No keys or third-party service
+needed.
+
+The image response sets an httpOnly cookie (`image_captcha_id`) holding only
+a random challenge ID. `POST /api/auth/image-captcha/verify` checks the
+typed text (case-insensitive, trimmed) before the credentials. Each
+challenge works for one attempt only, correct or not, and expires after
+300 s; each new image replaces the cookie, so only the last image the
+browser loaded is valid. At most 1000 open challenges are kept (oldest
+dropped first), and answers live in process memory, so run a single server
+process.
+
+Success: HTTP 200 `{"ok": true, "role": "..."}`. Errors: 400
+`missing_captcha`; 401 `captcha_failed` or `invalid_credentials`.
+
 ## HTTP Basic (curl) test case
 
 `/api/auth/basic` is a sixth login case with no UI: it authenticates a
