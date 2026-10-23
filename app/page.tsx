@@ -184,7 +184,7 @@ export default function Home() {
             </div>
             <div className="fg">
               <label>Contraseña</label>
-              <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="password" className={loginError ? 'ei' : ''}/>
+              <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="******" className={loginError ? 'ei' : ''}/>
             </div>
             <button className="btn bp" onClick={doLogin}>Continuar →</button>
           </div>

@@ -141,7 +141,7 @@ export default function RecaptchaV3LoginClient({ siteKey }: { siteKey: string | 
                 </div>
                 <div className="fg">
                   <label>Contraseña</label>
-                  <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="password" />
+                  <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="******" />
                 </div>
                 <button className="btn bp" onClick={doLogin} disabled={!canSubmit}>
                   {status === 'verifying' ? 'Verificando…' : 'Continuar →'}

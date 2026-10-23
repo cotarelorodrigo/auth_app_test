@@ -154,7 +154,7 @@ export default function RecaptchaLoginClient({ siteKey }: { siteKey: string | nu
                 </div>
                 <div className="fg">
                   <label>Contraseña</label>
-                  <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="password" />
+                  <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="******" />
                 </div>
                 <Script src="https://www.google.com/recaptcha/api.js?render=explicit&hl=es" strategy="afterInteractive" onLoad={setupRecaptcha} />
                 <div className="g-recaptcha-wrap" ref={widgetRef} />

@@ -96,7 +96,7 @@ export default function ImageCaptchaLoginPage() {
             </div>
             <div className="fg">
               <label>Contraseña</label>
-              <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="password" />
+              <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="******" />
             </div>
             <div className="fg">
               <label>Código de la imagen</label>
