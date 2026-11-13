@@ -2,41 +2,6 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 
-const USERS: Record<string, { password: string; secret: string; role: string }> = {
-  testuser_01: { password: 'Test@1234!', secret: 'JBSWY3DPEHPK3PXP', role: 'Usuario' },
-  testuser_02: { password: 'Secure#5678!', secret: 'KRUGKIDROVUWG2ZA', role: 'Usuario' },
-  admin_test:  { password: 'Admin@Pass99!', secret: 'N5UGC3THNFQWMZLB', role: 'Admin' },
-}
-
-function b32(s: string): Uint8Array {
-  const C = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'
-  s = s.toUpperCase().replace(/=+$/, '')
-  let bits = 0, val = 0
-  const out: number[] = []
-  for (const c of s) { val = (val << 5) | C.indexOf(c); bits += 5; if (bits >= 8) { bits -= 8; out.push((val >> bits) & 0xff) } }
-  return new Uint8Array(out)
-}
-
-async function hmacSHA1(key: Uint8Array, data: ArrayBuffer): Promise<Uint8Array> {
-  const k = await crypto.subtle.importKey('raw', key.buffer.slice(key.byteOffset, key.byteOffset + key.byteLength) as ArrayBuffer, { name: 'HMAC', hash: 'SHA-1' }, false, ['sign'])
-  return new Uint8Array(await crypto.subtle.sign('HMAC', k, data))
-}
-
-async function genTOTP(secret: string, w = 0): Promise<string> {
-  const T = Math.floor(Date.now() / 1000 / 30) + w
-  const buf = new ArrayBuffer(8)
-  new DataView(buf).setUint32(4, T, false)
-  const mac = await hmacSHA1(b32(secret), buf)
-  const o = mac[19] & 0xf
-  const code = (((mac[o] & 0x7f) << 24) | (mac[o + 1] << 16) | (mac[o + 2] << 8) | mac[o + 3]) % 1_000_000
-  return String(code).padStart(6, '0')
-}
-
-async function verifyTOTP(secret: string, code: string): Promise<boolean> {
-  for (const w of [-1, 0, 1]) if (await genTOTP(secret, w) === code) return true
-  return false
-}
-
 type Screen = 'login' | 'totp' | 'success'
 
 export default function Home() {
@@ -48,6 +13,7 @@ export default function Home() {
   const [otpError, setOtpError] = useState(false)
   const [timerSec, setTimerSec] = useState(30)
   const [currentUser, setCurrentUser] = useState('')
+  const [role, setRole] = useState('')
   const digitRefs = useRef<(HTMLInputElement | null)[]>([])
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
@@ -64,30 +30,27 @@ export default function Home() {
     return () => { if (timerRef.current) clearInterval(timerRef.current) }
   }, [screen])
 
-  const doLogin = useCallback(() => {
-    const user = USERS[username]
-    if (!user || user.password !== password) {
-      setLoginError(true)
-      setTimeout(() => setLoginError(false), 3000)
-      return
+  const failLogin = useCallback(() => {
+    setLoginError(true)
+    setTimeout(() => setLoginError(false), 3000)
+  }, [])
+
+  const doLogin = useCallback(async () => {
+    try {
+      const res = await fetch('/api/auth/2fa/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      })
+      if (!res.ok) return failLogin()
+    } catch {
+      return failLogin()
     }
     setCurrentUser(username)
     setOtpDigits(['', '', '', '', '', ''])
     setScreen('totp')
     setTimeout(() => digitRefs.current[0]?.focus(), 100)
-  }, [username, password])
-
-  const doVerify = useCallback(async () => {
-    const code = otpDigits.join('')
-    const ok = await verifyTOTP(USERS[currentUser].secret, code)
-    if (!ok) {
-      setOtpError(true)
-      setTimeout(() => { setOtpError(false); setOtpDigits(['', '', '', '', '', '']); digitRefs.current[0]?.focus() }, 1800)
-      return
-    }
-    if (timerRef.current) clearInterval(timerRef.current)
-    setScreen('success')
-  }, [otpDigits, currentUser])
+  }, [username, password, failLogin])
 
   const goBack = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current)
@@ -95,10 +58,38 @@ export default function Home() {
     setScreen('login')
   }, [])
 
+  const failVerify = useCallback(() => {
+    setOtpError(true)
+    setTimeout(() => { setOtpError(false); setOtpDigits(['', '', '', '', '', '']); digitRefs.current[0]?.focus() }, 1800)
+  }, [])
+
+  const doVerify = useCallback(async () => {
+    const code = otpDigits.join('')
+    let data: { role?: string } = {}
+    try {
+      const res = await fetch('/api/auth/2fa/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      })
+      if (res.status === 401 && (await res.clone().json().catch(() => ({})))?.error === 'unauthenticated') {
+        return goBack() // the pending step expired: start over from the password
+      }
+      if (!res.ok) return failVerify()
+      data = await res.json()
+    } catch {
+      return failVerify()
+    }
+    if (timerRef.current) clearInterval(timerRef.current)
+    setRole(data.role ?? '')
+    setScreen('success')
+  }, [otpDigits, goBack, failVerify])
+
   const doLogout = useCallback(() => {
     setUsername('')
     setPassword('')
     setCurrentUser('')
+    setRole('')
     setOtpDigits(['', '', '', '', '', ''])
     setScreen('login')
   }, [])
@@ -239,7 +230,7 @@ export default function Home() {
             <div className="ss">Autenticación de dos factores completada correctamente.</div>
             <div className="badge">
               <div className="dot"/>
-              <span>{currentUser} · {USERS[currentUser]?.role}</span>
+              <span>{currentUser} · {role}</span>
             </div>
             <br/>
             <button className="btn bg" onClick={doLogout}>Cerrar sesión</button>

@@ -1,34 +1,32 @@
 # TestAuth — 2FA Demo
 
-A minimal two-factor authentication demo app built with vanilla HTML/CSS/JS. No dependencies, no backend — runs entirely in the browser.
+A Next.js app with several login test cases. The home page (`/`) is the
+two-factor case; the other cases are described below.
 
-## Features
+## 2FA test case (`/`)
 
-- Step 1: Username + password login
-- Step 2: TOTP verification (RFC 6238 compliant)
-- TOTP implemented with the native `crypto.subtle` Web API
+- Step 1: Username + password login (`POST /api/auth/2fa/login`)
+- Step 2: TOTP verification, RFC 6238 (`POST /api/auth/2fa/verify`)
+- Both steps are checked on the server (TOTP with `node:crypto`). The
+  passwords and TOTP secrets live in `app/lib/users.ts` and never reach the
+  browser: step 1 only sets an httpOnly `twofa_pending` cookie (5 min, kept in
+  process memory), and step 2 reads the user from that cookie, not from the
+  request body.
 - 30-second countdown timer
 - Supports Google Authenticator, Authy, and any standard TOTP app
 
-## Usage
-
-Just open `index.html` in a browser — no build step needed.
-
-To test, add a user's TOTP secret manually in your authenticator app, then log in with their credentials.
-
-## Setup
+To test, add a user's TOTP secret (base32, in `app/lib/users.ts`) manually in
+your authenticator app, then log in with their credentials. A single server
+process is required.
 
 ```bash
-git clone <your-repo-url>
-cd testauth
-open index.html
+npm install
+npm run dev
 ```
 
-## Tech
-
-- Vanilla HTML/CSS/JS
-- TOTP: RFC 6238 via `crypto.subtle` (no libraries)
-- Zero dependencies
+Success: `200 {"ok":true,"role":"..."}` on the verify step. Errors: 401
+`invalid_credentials` (step 1), 401 `unauthenticated` (no/expired pending
+cookie) or `invalid_code` (step 2).
 
 ## Google Sign-In test case
 
