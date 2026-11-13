@@ -1,14 +1,14 @@
-// Server side of the IDOR test case: sessions and documents shared by the
-// /api/idor/* routes. Everything lives in this process's memory, so the case
+// Server side of the portal test case: sessions and documents shared by the
+// /api/portal/* routes. Everything lives in this process's memory, so the case
 // needs a single server process.
 //
-// ⚠️ INTENTIONALLY VULNERABLE — see app/api/idor/documents/[id]/route.ts.
+// ⚠️ INTENTIONALLY VULNERABLE — see app/api/portal/documents/[id]/route.ts.
 // For authorized security testing only. Do NOT ship this to a real/production
 // deployment.
 
 import { randomUUID } from "node:crypto";
 
-export const COOKIE_NAME = "idor_session";
+export const COOKIE_NAME = "session";
 const COOKIE_PATTERN = new RegExp(`(?:^|;\\s*)${COOKIE_NAME}=([^;]+)`);
 
 export type Document = {
@@ -56,14 +56,14 @@ export const DOCUMENTS: Document[] = [
     id: "dda47e99-0a4d-46c2-b639-423dd42cab18",
     owner: "admin_test",
     title: "Production API keys rotation",
-    content: "Rotated production API key: sk_live_idor_demo_51Hx9Zq. Admin eyes only.",
+    content: "Rotated production API key: sk_live_51Hx9ZqT7vKd2LmPw. Admin eyes only.",
   },
 ];
 
 // Kept on globalThis so every route shares one store even if the bundler
 // gives each route its own copy of this module.
-const globalStore = globalThis as typeof globalThis & { __idorSessions?: Map<string, string> };
-const sessions = (globalStore.__idorSessions ??= new Map<string, string>());
+const globalStore = globalThis as typeof globalThis & { __portalSessions?: Map<string, string> };
+const sessions = (globalStore.__portalSessions ??= new Map<string, string>());
 
 /**
  * Opens a session for a user and returns its random token.

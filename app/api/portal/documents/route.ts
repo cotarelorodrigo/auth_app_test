@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 
-import { DOCUMENTS, getSessionUser } from '@/app/lib/idor'
+import { DOCUMENTS, getSessionUser } from '@/app/lib/portal'
 
 // Correct behavior: lists only the caller's own documents, so a tester can
 // learn their own IDs here and nobody else's.

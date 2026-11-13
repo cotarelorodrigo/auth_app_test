@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 
-import { DOCUMENTS, getSessionUser } from '@/app/lib/idor'
+import { DOCUMENTS, getSessionUser } from '@/app/lib/portal'
 
 // ⚠️ INTENTIONALLY VULNERABLE — IDOR / broken access control sink for authorized security testing only.
 // Do NOT ship this to a real/production deployment.

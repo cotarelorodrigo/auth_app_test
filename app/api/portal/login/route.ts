@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 
-import { COOKIE_NAME, createSession } from '@/app/lib/idor'
+import { COOKIE_NAME, createSession } from '@/app/lib/portal'
 import { USERS } from '@/app/lib/users'
 
 export async function POST(req: NextRequest) {
@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
   const res = Response.json({ ok: true, role: user.role })
   res.headers.append(
     'Set-Cookie',
-    `${COOKIE_NAME}=${createSession(username)}; Path=/api/idor; HttpOnly; SameSite=Lax`,
+    `${COOKIE_NAME}=${createSession(username)}; Path=/api/portal; HttpOnly; SameSite=Lax`,
   )
   return res
 }
