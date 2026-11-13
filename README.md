@@ -174,3 +174,30 @@ curl -i http://localhost:3000/api/auth/basic \
 Returns `200 {"ok":true,"user":...}` on a match. A missing, malformed or
 wrong header returns `401` with `WWW-Authenticate: Basic`; without the
 env vars configured it returns `500 not_configured`.
+
+## IDOR test case (multi-user)
+
+`/api/idor/*` is an intentionally vulnerable access-control case with no
+UI, meant to be exercised with `curl` or an agent. Finding it takes
+**two or three logged-in users**; one user alone can't see it.
+
+- `POST /api/idor/login` with `{"username", "password"}` (the same test
+  users as the other cases) returns `200 {"ok":true,"role":...}` and an
+  `idor_session` cookie. Wrong credentials return `401`.
+- `GET /api/idor/documents` lists the caller's own documents (ID and title
+  only). No session returns `401`.
+- `GET /api/idor/documents/<uuid>` returns a document. Unknown ID returns
+  `404`, no session returns `401`.
+
+Each user owns 2 documents with UUID IDs, and no endpoint exposes the IDs
+of documents the caller doesn't own, so a tester only learns another
+user's IDs by logging in as that user. `GET /api/idor/documents/<uuid>`
+checks the session but not ownership or role, so any logged-in user can
+read any document:
+
+- **Horizontal:** `testuser_01` reads `testuser_02`'s documents.
+- **Vertical:** `testuser_01` or `testuser_02` reads `admin_test`'s
+  confidential documents.
+
+Sessions and documents live in process memory, so run a single server
+process. No env vars needed.
