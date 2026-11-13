@@ -177,15 +177,19 @@ env vars configured it returns `500 not_configured`.
 
 ## IDOR test case (multi-user)
 
-`/api/portal/*` is an intentionally vulnerable access-control case with no
-UI, meant to be exercised with `curl` or an agent. Finding it takes
-**two or three logged-in users**; one user alone can't see it.
+`/portal` is an intentionally vulnerable access-control case. It has a
+browser login page (username + password, same test users as the other
+cases) that lists the logged-in user's documents with a "Cerrar sesión"
+button, backed by `/api/portal/*`, which can also be driven with `curl`.
+Finding the bug takes **two or three logged-in users**; one user alone
+can't see it.
 
 - `POST /api/portal/login` with `{"username", "password"}` (the same test
-  users as the other cases) returns `200 {"ok":true,"role":...}` and an
+  users as the other cases) returns `200 {"ok":true,"role":...}` and a
   `session` cookie. Wrong credentials return `401`.
-- `GET /api/portal/documents` lists the caller's own documents (ID and title
-  only). No session returns `401`.
+- `GET /api/portal/documents` returns `{"user", "role", "documents"}`, with
+  the caller's own documents (ID and title only). No session returns `401`.
+- `POST /api/portal/logout` ends the session and clears the cookie.
 - `GET /api/portal/documents/<uuid>` returns a document. Unknown ID returns
   `404`, no session returns `401`.
 

@@ -87,3 +87,13 @@ export function getSessionUser(req: Request): string | null {
   const match = COOKIE_PATTERN.exec(req.headers.get("cookie") ?? "");
   return match ? (sessions.get(match[1]) ?? null) : null;
 }
+
+/**
+ * Ends the session behind a request's cookie, if any.
+ *
+ * @param req - The incoming request.
+ */
+export function destroySession(req: Request): void {
+  const match = COOKIE_PATTERN.exec(req.headers.get("cookie") ?? "");
+  if (match) sessions.delete(match[1]);
+}
