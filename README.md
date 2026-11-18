@@ -232,3 +232,32 @@ reached the button.
   button: a login `POST` only appears when it did.
 
 No env vars needed.
+
+## Dropdown test case
+
+`/dropdown-login` is a UI-interaction case: a username/password form (same
+test users as the other cases) that is not on the page at load. It lives
+inside a panel that slides down from a "Iniciar sesión" button in the top
+bar, so the agent has to find that button and open the panel before it can
+type anything. A successful login proves it got to the form.
+
+- The panel starts closed on every page load and is not remembered. It opens
+  with a click on the button (no hover) and takes about 0.4 s to slide open.
+  While it is closed or sliding shut its fields are `visibility: hidden`:
+  they cannot be clicked or focused.
+- Like a normal dropdown, a click outside it or Escape closes it. What was
+  typed stays in the fields.
+- The form is a real `<form>`, so Enter in a field submits it. The button is
+  labeled and is a plain `<button>` with `aria-expanded`; nothing about it is
+  disguised.
+- A wrong login shows the error inside the panel and leaves it open. A
+  correct one closes the panel and shows "Acceso concedido" in the page, with
+  "Cerrar sesión" to start over.
+- `POST /api/auth/dropdown/login` with `{"username", "password"}` returns
+  `200 {"ok":true,"role":"..."}`. Wrong or missing credentials (including a
+  malformed body) return `401 {"error":"invalid_credentials"}`. It sets no
+  cookies.
+- The request log from `middleware.ts` shows whether the agent got through:
+  a login `POST` only appears once the form was reached and submitted.
+
+No env vars needed.
