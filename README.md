@@ -216,9 +216,12 @@ banner ("Aceptar" or "Rechazar") first. A successful login proves the click
 reached the button.
 
 - The banner is not remembered: it comes back on every page load.
-- The form has no `<form>` element and Enter does not submit, so there is no
-  keyboard shortcut around the banner. The button is never disabled apart
-  from the moment the request is in flight.
+- The form has no `<form>` element, so Enter in a field does not submit.
+  While the banner is open the button also ignores keyboard activation (Tab,
+  then Enter or Space) and scripted `.click()` calls: only a pointer click
+  that reaches the button logs in. Once the banner is closed the keyboard
+  works normally. The banner does not trap focus, and the button is never
+  disabled apart from the moment the request is in flight.
 - The server does not require cookie consent: the banner is only a visual
   obstacle.
 - `POST /api/auth/cookie-banner/login` with `{"username", "password"}`

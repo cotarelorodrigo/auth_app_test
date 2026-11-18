@@ -64,7 +64,9 @@ caso no es de seguridad ni de credenciales: es de interacción con la UI.
   mal formado cuenta como credenciales vacías y devuelve 401. No setea cookies.
 - **Botón de login:** siempre habilitado (solo se deshabilita mientras verifica),
   y sin `<form>`: solo `onClick`, como en `/image-captcha-login`, así que Enter
-  no envía.
+  no envía. Mientras el banner está abierto, el `onClick` ignora los clicks con
+  `detail === 0` (Enter o Espacio con el foco en el botón, y `.click()`
+  programático): solo cuenta un click de puntero que llegue al botón.
 - **Banner sin focus trap:** no atrapa el foco, como un banner no modal real.
 - **README:** sección en inglés "Cookie banner test case", al final del archivo,
   con la ruta, el comportamiento del banner y las respuestas de la API.
@@ -84,4 +86,8 @@ caso no es de seguridad ni de credenciales: es de interacción con la UI.
 - El banner reaparece en cada carga, sin guardar nada.
 - El botón siempre habilitado y sin envío con Enter.
 - El banner no atrapa el foco.
+- Mientras el banner está abierto, el botón ignora la activación por teclado
+  (Tab + Enter/Espacio) y el `.click()` programático. Se agregó después de la
+  revisión final: sin esto, Tab + Enter lograba loguear con el banner abierto,
+  contra el anti-objetivo del caso.
 - Los nombres de ruta y de archivos de arriba.

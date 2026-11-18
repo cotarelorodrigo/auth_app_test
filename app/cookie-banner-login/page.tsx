@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import type { CSSProperties } from 'react'
+import type { CSSProperties, MouseEvent } from 'react'
 
 type Status = 'login' | 'verifying' | 'success' | 'error'
 
@@ -76,6 +76,15 @@ export default function CookieBannerLoginPage() {
     }
   }
 
+  // While the banner is open only a pointer click that really reaches the
+  // button counts. Enter/Space on the focused button and scripted .click()
+  // calls arrive with detail === 0 and are ignored, so a successful login
+  // proves the click got through the banner.
+  const onLoginClick = (e: MouseEvent<HTMLButtonElement>) => {
+    if (bannerOpen && e.detail === 0) return
+    doLogin()
+  }
+
   // Resets the form only: the banner stays closed until the next page load.
   const retry = () => {
     setUsername('')
@@ -112,7 +121,7 @@ export default function CookieBannerLoginPage() {
                 <label>Contraseña</label>
                 <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="******" />
               </div>
-              <button className="btn bp" onClick={doLogin} disabled={status === 'verifying'}>
+              <button className="btn bp" onClick={onLoginClick} disabled={status === 'verifying'}>
                 {status === 'verifying' ? 'Verificando…' : 'Continuar →'}
               </button>
             </div>
