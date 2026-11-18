@@ -203,3 +203,29 @@ read any document:
 
 Sessions and documents live in process memory, so run a single server
 process. No env vars needed.
+
+## Cookie banner test case
+
+`/cookie-banner-login` is a UI-interaction case: a username/password form
+(same test users as the other cases) whose login button is covered by a
+cookie banner. The banner is fixed to the bottom of the window and the card
+sits just above it, so the banner covers the center of the button at any
+window height and leaves only a thin sliver of it visible. A click on the
+button lands on the banner and does nothing; the agent has to dismiss the
+banner ("Aceptar" or "Rechazar") first. A successful login proves the click
+reached the button.
+
+- The banner is not remembered: it comes back on every page load.
+- The form has no `<form>` element and Enter does not submit, so there is no
+  keyboard shortcut around the banner. The button is never disabled apart
+  from the moment the request is in flight.
+- The server does not require cookie consent: the banner is only a visual
+  obstacle.
+- `POST /api/auth/cookie-banner/login` with `{"username", "password"}`
+  returns `200 {"ok":true,"role":"..."}`. Wrong or missing credentials
+  (including a malformed body) return `401 {"error":"invalid_credentials"}`.
+  It sets no cookies.
+- The request log from `middleware.ts` shows whether the click reached the
+  button: a login `POST` only appears when it did.
+
+No env vars needed.
